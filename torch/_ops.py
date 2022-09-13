@@ -10,6 +10,10 @@ import torch._C
 
 import torch.jit
 from torch import _utils_internal
+from torch._C import DispatchKey  # type: ignore[attr-defined]
+from torch.overrides import handle_torch_function, has_torch_function
+from torch.utils._python_dispatch import TorchDispatchMode
+from torch.utils._pytree import tree_flatten
 
 # Query `hasattr` only once.
 _SET_GLOBAL_FLAGS = hasattr(sys, "getdlopenflags") and hasattr(sys, "setdlopenflags")
@@ -60,6 +64,7 @@ class PyOperator(PyOperatorABC):
     def py_impl(self, dispatch_key_or_mode):
         def inner(fn):
             if inspect.isclass(dispatch_key_or_mode) and issubclass(
+<<<<<<< HEAD
                 dispatch_key_or_mode, torch.utils._python_dispatch.TorchDispatchMode
             ):
                 mode = dispatch_key_or_mode
@@ -166,7 +171,11 @@ class OpOverload(PyOperatorABC):
         self._name = self._schema.name
         if schema.overload_name:
             self._name += "." + schema.overload_name
+<<<<<<< HEAD
         self.py_kernels: Dict[torch._C.DispatchKey, Any] = {}  # type: ignore[name-defined]
+=======
+        self.py_kernels: Dict[DispatchKey, Any] = {}
+>>>>>>> 7fde6453a05bd68f3c22f3bf50810dd6165cde68
         self.__name__ = "{}.{}".format(
             self._schema.name.split("::")[1], self._overloadname
         )
@@ -210,7 +219,11 @@ class OpOverload(PyOperatorABC):
     def py_impl(self, dispatch_key_or_mode):
         def inner(fn):
             if inspect.isclass(dispatch_key_or_mode) and issubclass(
+<<<<<<< HEAD
                 dispatch_key_or_mode, torch.utils._python_dispatch.TorchDispatchMode
+=======
+                dispatch_key_or_mode, TorchDispatchMode
+>>>>>>> 7fde6453a05bd68f3c22f3bf50810dd6165cde68
             ):
                 mode = dispatch_key_or_mode
                 assert mode not in self.python_key_mode_table
