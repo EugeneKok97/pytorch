@@ -44,6 +44,9 @@ class PyOperatorABC(ABC):
         pass
 
 
+pyop_namespace = {}
+
+
 class PyOperator(PyOperatorABC):
     def __init__(self, name):
         self._name = name
@@ -51,8 +54,8 @@ class PyOperator(PyOperatorABC):
         self.python_key_mode_table = {}
 
         # Make _OPNamespace not scream, this whole name based association needs a good hard look
-        self.__name__ = "pyop." + name
-        pyop_namespace.py_ops[name] = self
+        self.__name__ = name
+        pyop_namespace[name] = self
 
     def fallthrough(self, dispatch_key):
         self.table[dispatch_key] = self._fallthrough_fn(self, dispatch_key)
@@ -390,15 +393,8 @@ class _OpNamespace(types.ModuleType):
     def __init__(self, name):
         super(_OpNamespace, self).__init__("torch.ops." + name)
         self.name = name
-        if self.name == "pyop":
-            self.pyops = pyop_namespace
-        else:
-            self.pyops = None  # type: ignore[assignment]
 
     def __getattr__(self, op_name):
-        pyops = object.__getattribute__(self, "pyops")
-        if pyops is not None:
-            return pyops.py_ops[op_name]
         # It is not a valid op_name when __file__ is passed in
         if op_name == "__file__":
             return "torch.ops"
@@ -434,11 +430,8 @@ class _OpNamespace(types.ModuleType):
 
 class _PyOpNamespace(_OpNamespace):
     def __init__(self):
-        super(_PyOpNamespace, self).__init__("torch.ops.pyop")
-        self.py_ops = {}
-
-
-pyop_namespace = _PyOpNamespace()
+        super(_PyOpNamespace, self).__init__("torch.ops")
+        self.pyop_namespace = pyop_namespace
 
 
 class _Ops(types.ModuleType):
@@ -447,8 +440,13 @@ class _Ops(types.ModuleType):
     def __init__(self):
         super(_Ops, self).__init__("torch.ops")
         self.loaded_libraries = set()
+        self.pyops = _PyOpNamespace()
 
     def __getattr__(self, name):
+        # Check if the name is a pyop
+        if name in self.pyops.pyop_namespace:
+            return self.pyops.pyop_namespace[name]
+
         # Here we are creating `torch.ops.my_namespace`
         namespace = _OpNamespace(name)
         setattr(self, name, namespace)
